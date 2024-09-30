@@ -3,6 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from pymongo import MongoClient
 import os  # Import the os module
+from flask import Flask  # Import Flask
 
 # Replace the TOKEN and MongoDB connection string with your values
 TOKEN: Final = '7847258274:AAEbJq1L5tG6J89QQEAzgzEfwJ81FIOzbZ0'
@@ -68,6 +69,13 @@ async def handle_question_selection(update: Update, context: ContextTypes.DEFAUL
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"Update {update} caused error {context.error}")
 
+# Flask app to satisfy Render's requirement for a port
+flask_app = Flask(__name__)
+
+@flask_app.route('/')
+def index():
+    return 'Bot is running'
+
 if __name__ == '__main__':
     print("Starting BOT...")
     app = Application.builder().token(TOKEN).build()
@@ -82,9 +90,14 @@ if __name__ == '__main__':
     # Errors:
     app.add_error_handler(error)
 
-    # Get the port from environment variable, defaulting to 8443 if not set
+    # Get the port from the environment variable, defaulting to 8443 if not set
     PORT = int(os.environ.get("PORT", 8443))  
     print(f"Listening on port {PORT}...")
+
+    # Start the Flask server in a separate thread
+    from threading import Thread
+    thread = Thread(target=flask_app.run, kwargs={'host': '0.0.0.0', 'port': PORT})
+    thread.start()
 
     print("Polling...")
     app.run_polling(poll_interval=3)
