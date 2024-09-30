@@ -1,26 +1,16 @@
-import os
-import logging
 from typing import Final
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-from pymongo import MongoClient, errors
+from pymongo import MongoClient
+import os  # Import the os module
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Replace the TOKEN and MongoDB connection string with your environment variables
-TOKEN: Final = os.getenv('TELEGRAM_BOT_TOKEN')
+# Replace the TOKEN and MongoDB connection string with your values
+TOKEN: Final = '7847258274:AAEbJq1L5tG6J89QQEAzgzEfwJ81FIOzbZ0'
 BOT_USERNAME: Final = '@hackerinterviewbot'
-MONGO_URI: Final = os.getenv('MONGODB_URI')
 
 # Connection string from MongoDB Atlas
-try:
-    client = MongoClient(MONGO_URI)
-    db = client['coding_questions']  # Your database name
-except errors.ConnectionError as e:
-    logger.error("Could not connect to MongoDB: %s", e)
-    raise
+client = MongoClient("mongodb+srv://anik:AnirudhMongoDB@interviewhacker.fwixr.mongodb.net/?retryWrites=true&w=majority&appName=InterviewHacker")
+db = client['coding_questions']  # Your database name
 
 # Collections
 topics_collection = db['topics']
@@ -28,30 +18,19 @@ questions_collection = db['questions']
 
 # Function to get the topics from MongoDB
 def get_topics():
-    try:
-        topics = topics_collection.find({})
-        return [t["name"] for t in topics]
-    except errors.PyMongoError as e:
-        logger.error("Error fetching topics: %s", e)
-        return []
+    topics = topics_collection.find({})
+    return [t["name"] for t in topics]
 
 # Function to get questions by topic
 def get_questions_by_topic(topic_name):
-    try:
-        questions = questions_collection.find({"topic": topic_name})
-        return [q["question_text"] for q in questions]
-    except errors.PyMongoError as e:
-        logger.error("Error fetching questions for topic %s: %s", topic_name, e)
-        return []
+    questions = questions_collection.find({"topic": topic_name})
+    return [q["question_text"] for q in questions]
 
 # Function to get approach and intuition by question text
 def get_approach_by_question(question_text):
-    try:
-        question = questions_collection.find_one({"question_text": question_text})
-        if question:
-            return question.get("approach"), question.get("intuition")
-    except errors.PyMongoError as e:
-        logger.error("Error fetching approach for question %s: %s", question_text, e)
+    question = questions_collection.find_one({"question_text": question_text})
+    if question:
+        return question.get("approach"), question.get("intuition")
     return None, None
 
 # Start command handler to show the topic selection menu
@@ -87,10 +66,10 @@ async def handle_question_selection(update: Update, context: ContextTypes.DEFAUL
 
 # Error handler
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.error(f"Update {update} caused error {context.error}")
+    print(f"Update {update} caused error {context.error}")
 
 if __name__ == '__main__':
-    logger.info("Starting BOT...")
+    print("Starting BOT...")
     app = Application.builder().token(TOKEN).build()
     
     # Command handler to show the topic menu
@@ -103,5 +82,9 @@ if __name__ == '__main__':
     # Errors:
     app.add_error_handler(error)
 
-    logger.info("Polling...")
+    # Get the port from environment variable, defaulting to 8443 if not set
+    PORT = int(os.environ.get("PORT", 8443))  
+    print(f"Listening on port {PORT}...")
+
+    print("Polling...")
     app.run_polling(poll_interval=3)
