@@ -1,15 +1,21 @@
 from typing import Final
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from pymongo import MongoClient
+from pymongo.errors import ConnectionError
 
 # Replace the TOKEN and MongoDB connection string with your values
-TOKEN: Final = '7847258274:AAEbJq1L5tG6J89QQEAzgzEfwJ81FIOzbZ0'
+TOKEN: Final = 'YOUR_BOT_TOKEN'  # Use your actual token
 BOT_USERNAME: Final = '@hackerinterviewbot'
 
 # Connection string from MongoDB Atlas
-client = MongoClient("mongodb+srv://anik:AnirudhMongoDB@interviewhacker.fwixr.mongodb.net/?retryWrites=true&w=majority&appName=InterviewHacker")
-db = client['coding_questions']  # Your database name
+try:
+    client = MongoClient("mongodb+srv://anik:AnirudhMongoDB@interviewhacker.fwixr.mongodb.net/?retryWrites=true&w=majority&appName=InterviewHacker")
+    db = client['coding_questions']  # Your database name
+except ConnectionError as e:
+    print(f"Failed to connect to MongoDB: {e}")
+    exit(1)  # Exit the application if the connection fails
 
 # Collections
 topics_collection = db['topics']
@@ -80,6 +86,10 @@ if __name__ == '__main__':
 
     # Errors:
     app.add_error_handler(error)
+
+    # Get the port from environment variable, defaulting to 8443 if not set
+    PORT = int(os.environ.get("PORT", 8443))  
+    print(f"Listening on port {PORT}...")
 
     print("Polling...")
     app.run_polling(poll_interval=3)
