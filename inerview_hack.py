@@ -1,8 +1,7 @@
 from typing import Final
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from pymongo import MongoClient
-import pandas as pd
 
 # Replace the TOKEN and MongoDB connection string with your values
 TOKEN: Final = '7847258274:AAEbJq1L5tG6J89QQEAzgzEfwJ81FIOzbZ0'
@@ -32,38 +31,6 @@ def get_approach_by_question(question_text):
     if question:
         return question.get("approach"), question.get("intuition")
     return None, None
-
-# Function to insert data from Excel into MongoDB with duplicate checks
-def insert_data_from_excel(file_path):
-    df = pd.read_excel(file_path)
-    
-    for _, row in df.iterrows():
-        # Check if the topic already exists in the database
-        topic = row['Topic']
-        existing_topic = topics_collection.find_one({"name": topic})
-        
-        if not existing_topic:
-            # Insert topic if it does not exist
-            topics_collection.insert_one({"name": topic})
-        
-        # Check if the question already exists for the topic
-        question_text = row['Question']
-        existing_question = questions_collection.find_one({"question_text": question_text, "topic": topic})
-        
-        if not existing_question:
-            # Insert the question along with the approach and intuition if not exists
-            question = {
-                "topic": topic,
-                "question_text": question_text,
-                "approach": row['Approach'],
-                "intuition": row['Intuition']
-            }
-            questions_collection.insert_one(question)
-        else:
-            print(f"Skipping duplicate question: {question_text}")
-
-# Insert DSA questions into MongoDB from the Excel file (do this once)
-insert_data_from_excel(r"C:\Users\dell\Downloads\dsa_questions_interview.xlsx")
 
 # Start command handler to show the topic selection menu
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
